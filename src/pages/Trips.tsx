@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Plus, X, ArrowRight, Pencil, Trash2 } from "lucide-react";
-import { useAppContext, type Trip } from "../context/AppContext";
-
-// ── Helpers ──────────────────────────────────────────────────
+import { useAppContext, type Trip, type TripLine } from "../context/AppContext";
 
 function formatCurrency(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -16,17 +14,15 @@ function formatDate(iso: string) {
   });
 }
 
-// ── Component ────────────────────────────────────────────────
-
 const emptyForm = {
-  truckId: "",
+  vehicleId: "",
   from: "",
   to: "",
-  date: "",
-  revenue: 0,
-  toll: 0,
-  fuel: 0,
-  other: 0,
+  date: new Date().toISOString().split("T")[0],
+  loadWeight: 0,
+  totalAmount: 0,
+  status: "In Progress" as "In Progress" | "Completed",
+  lines: [{ detail: "Fuel", spent: 0, received: 0 }] as TripLine[],
 };
 
 export default function Trips() {
@@ -36,8 +32,9 @@ export default function Trips() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  function getTruckNumber(truckId: string) {
-    return vehicles.find((v) => v.id === truckId)?.truckNumber ?? truckId;
+  function getVehicleLabel(vehicleId: string) {
+    const v = vehicles.find((v) => v.id === vehicleId);
+    return v ? v.truckNumber || v.name : vehicleId;
   }
 
   function openAdd() {
@@ -49,21 +46,21 @@ export default function Trips() {
   function openEdit(t: Trip) {
     setEditTarget(t);
     setForm({
-      truckId: t.truckId,
+      vehicleId: t.vehicleId,
       from: t.from,
       to: t.to,
       date: t.date,
-      revenue: t.revenue,
-      toll: t.toll,
-      fuel: t.fuel,
-      other: t.other,
+      loadWeight: t.loadWeight,
+      totalAmount: t.totalAmount,
+      status: t.status,
+      lines: t.lines.length ? t.lines : [{ detail: "", spent: 0, received: 0 }],
     });
     setShowModal(true);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: { preventDefault: () => void }) {
     e.preventDefault();
-    if (!form.truckId || !form.from.trim() || !form.to.trim() || !form.date)
+    if (!form.vehicleId || !form.from.trim() || !form.to.trim() || !form.date)
       return;
 
     if (editTarget) {
@@ -94,8 +91,9 @@ export default function Trips() {
       {/* Trip Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {trips.map((t) => {
-          const totalExp = t.toll + t.fuel + t.other;
-          const profit = t.revenue - totalExp;
+          const totalSpent = t.lines.reduce((s, l) => s + l.spent, 0);
+          const totalReceived = t.lines.reduce((s, l) => s + l.received, 0);
+          const net = totalReceived - totalSpent;
           return (
             <div
               key={t.id}
@@ -104,9 +102,20 @@ export default function Trips() {
               {/* Top section */}
               <div className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-mono font-medium text-white">
-                    {getTruckNumber(t.truckId)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-mono font-medium text-white">
+                      {getVehicleLabel(t.vehicleId)}
+                    </span>
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        t.status === "Completed"
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : "bg-amber-500/15 text-amber-400"
+                      }`}
+                    >
+                      {t.status}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">
                       {formatDate(t.date)}
@@ -133,45 +142,52 @@ export default function Trips() {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Revenue</span>
+                  <span className="text-gray-400">Total Amount</span>
                   <span className="font-medium text-emerald-400">
-                    {formatCurrency(t.revenue)}
+                    {formatCurrency(t.totalAmount)}
                   </span>
                 </div>
+
+                {t.loadWeight > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Load Weight</span>
+                    <span className="text-gray-300">
+                      {t.loadWeight.toLocaleString("en-IN")} kg
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Expenses breakdown */}
-              <div className="border-t border-gray-800 px-5 py-4 space-y-2">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Expenses
-                </p>
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div>
-                    <p className="text-gray-500 text-xs">Toll</p>
-                    <p className="text-gray-300">{formatCurrency(t.toll)}</p>
+              {t.lines.length > 0 && (
+                <div className="border-t border-gray-800 px-5 py-4 space-y-2">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Financial Summary
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Total Spent</span>
+                    <span className="text-rose-400">
+                      {formatCurrency(totalSpent)}
+                    </span>
                   </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Fuel</p>
-                    <p className="text-gray-300">{formatCurrency(t.fuel)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Other</p>
-                    <p className="text-gray-300">{formatCurrency(t.other)}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Total Received</span>
+                    <span className="text-emerald-400">
+                      {formatCurrency(totalReceived)}
+                    </span>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Profit */}
+              {/* Net */}
               <div className="border-t border-gray-800 px-5 py-3 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-400">
-                  Profit
-                </span>
+                <span className="text-sm font-medium text-gray-400">Net</span>
                 <span
                   className={`text-sm font-semibold ${
-                    profit >= 0 ? "text-emerald-400" : "text-rose-400"
+                    net >= 0 ? "text-emerald-400" : "text-rose-400"
                   }`}
                 >
-                  {formatCurrency(profit)}
+                  {formatCurrency(net)}
                 </span>
               </div>
             </div>
@@ -211,7 +227,7 @@ export default function Trips() {
 
       {/* Add / Edit Trip Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <form
             onSubmit={handleSubmit}
             className="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-lg p-6 space-y-5 max-h-[90vh] overflow-y-auto"
@@ -233,24 +249,24 @@ export default function Trips() {
             </div>
 
             <div className="space-y-4">
-              {/* Truck */}
+              {/* Vehicle */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                  Truck
+                  Vehicle
                 </label>
                 <select
-                  value={form.truckId}
+                  value={form.vehicleId}
                   onChange={(e) =>
-                    setForm({ ...form, truckId: e.target.value })
+                    setForm({ ...form, vehicleId: e.target.value })
                   }
                   className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 >
                   <option value="" disabled>
-                    Select a truck
+                    Select a vehicle
                   </option>
                   {vehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.truckNumber}
+                      {v.truckNumber || v.name}
                     </option>
                   ))}
                 </select>
@@ -265,9 +281,7 @@ export default function Trips() {
                   <input
                     type="text"
                     value={form.from}
-                    onChange={(e) =>
-                      setForm({ ...form, from: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, from: e.target.value })}
                     placeholder="e.g. Mumbai"
                     className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
@@ -286,49 +300,50 @@ export default function Trips() {
                 </div>
               </div>
 
-              {/* Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                />
-              </div>
-
-              {/* Revenue */}
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                  Revenue (₹)
-                </label>
-                <input
-                  type="number"
-                  value={form.revenue || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, revenue: Number(e.target.value) })
-                  }
-                  placeholder="0"
-                  className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                />
-              </div>
-
-              {/* Expenses */}
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide pt-1">
-                Expenses
-              </p>
-              <div className="grid grid-cols-3 gap-3">
+              {/* Date & Status */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                    Toll (₹)
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm({ ...form, date: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">
+                    Status
+                  </label>
+                  <select
+                    value={form.status}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        status: e.target.value as typeof form.status,
+                      })
+                    }
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  >
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Load Weight & Total Amount */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">
+                    Load Weight (KG)
                   </label>
                   <input
                     type="number"
-                    value={form.toll || ""}
+                    value={form.loadWeight || ""}
                     onChange={(e) =>
-                      setForm({ ...form, toll: Number(e.target.value) })
+                      setForm({ ...form, loadWeight: Number(e.target.value) })
                     }
                     placeholder="0"
                     className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
@@ -336,27 +351,13 @@ export default function Trips() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                    Fuel (₹)
+                    Total Amount (₹)
                   </label>
                   <input
                     type="number"
-                    value={form.fuel || ""}
+                    value={form.totalAmount || ""}
                     onChange={(e) =>
-                      setForm({ ...form, fuel: Number(e.target.value) })
-                    }
-                    placeholder="0"
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                    Other (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={form.other || ""}
-                    onChange={(e) =>
-                      setForm({ ...form, other: Number(e.target.value) })
+                      setForm({ ...form, totalAmount: Number(e.target.value) })
                     }
                     placeholder="0"
                     className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"

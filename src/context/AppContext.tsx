@@ -33,6 +33,7 @@ export interface Driver {
   idProof: string;
   licenseStatus: "Verified" | "Reviewing" | "Expired";
   idProofStatus: "Verified" | "Reviewing" | "Pending";
+  photoUrl?: string;
 }
 
 export interface TripLine {
@@ -55,9 +56,11 @@ export interface Trip {
 
 export interface BankAccount {
   id: string;
-  name: string;
+  holderName: string;
   bankName: string;
-  lastFour: string;
+  accountNo: string;
+  accountType: "Savings" | "Current";
+  ifsc: string;
 }
 
 interface AppContextType {
@@ -69,7 +72,7 @@ interface AppContextType {
   addVehicle: (vehicle: Omit<Vehicle, "id">) => Promise<void>;
   updateVehicle: (vehicle: Vehicle) => Promise<void>;
   deleteVehicle: (id: string) => Promise<void>;
-  addDriver: (driver: Omit<Driver, "id">) => Promise<void>;
+  addDriver: (driver: Omit<Driver, "id">) => Promise<string>;
   updateDriver: (driver: Driver) => Promise<void>;
   deleteDriver: (id: string) => Promise<void>;
   addTrip: (trip: Omit<Trip, "id">) => Promise<void>;
@@ -154,10 +157,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ── Drivers ──────────────────────────────────────────────
 
-  async function addDriver(driver: Omit<Driver, "id">) {
-    if (!driversCol) return;
+  async function addDriver(driver: Omit<Driver, "id">): Promise<string> {
+    if (!driversCol) return "";
     const ref = await addDoc(driversCol, driver);
     setDrivers((prev) => [...prev, { id: ref.id, ...driver } as Driver]);
+    return ref.id;
   }
 
   async function updateDriver(driver: Driver) {
