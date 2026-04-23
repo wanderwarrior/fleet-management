@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import VehicleDetail from "./pages/VehicleDetail";
+import TripDetail from "./pages/TripDetail";
 import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -29,6 +30,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout title="Vehicle Details">
                 <VehicleDetail />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trips/:id"
+          element={
+            <ProtectedRoute>
+              <MainLayout title="Trip Details">
+                <TripDetail />
               </MainLayout>
             </ProtectedRoute>
           }

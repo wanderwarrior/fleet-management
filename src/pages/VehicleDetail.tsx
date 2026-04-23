@@ -15,6 +15,7 @@ import {
   Loader2,
   Camera,
   Pencil,
+  X,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import type { TripLine } from "../context/AppContext";
@@ -854,8 +855,34 @@ type TripFormErrors = {
 function TripTab({ vehicleId, trips, addTrip, updateTrip, deleteTrip }: TripTabProps) {
   const [editingTrip, setEditingTrip] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [openTabs, setOpenTabs] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("list");
   const [tripErrors, setTripErrors] = useState<TripFormErrors>({});
   const [tripSaving, setTripSaving] = useState(false);
+
+  // Sort oldest→newest so Trip #1 is oldest, highest # is newest
+  const sortedTrips = [...trips].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  function getTripNumber(tripId: string) {
+    const idx = sortedTrips.findIndex((t) => t.id === tripId);
+    return idx === -1 ? "?" : idx + 1;
+  }
+
+  function openView(tripId: string) {
+    if (!openTabs.includes(tripId)) {
+      setOpenTabs((prev) => [...prev, tripId]);
+    }
+    setActiveTab(tripId);
+    setShowForm(false);
+  }
+
+  function closeTab(tripId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    setOpenTabs((prev) => prev.filter((id) => id !== tripId));
+    if (activeTab === tripId) setActiveTab("list");
+  }
 
   const emptyForm = {
     date: new Date().toISOString().split("T")[0],
@@ -928,10 +955,7 @@ function TripTab({ vehicleId, trips, addTrip, updateTrip, deleteTrip }: TripTabP
   }
 
   function addLine() {
-    setForm({
-      ...form,
-      lines: [...form.lines, { detail: "", spent: 0, received: 0 }],
-    });
+    setForm({ ...form, lines: [...form.lines, { detail: "", spent: 0, received: 0 }] });
   }
 
   function updateLine(index: number, field: keyof TripLine, value: string | number) {
@@ -952,250 +976,414 @@ function TripTab({ vehicleId, trips, addTrip, updateTrip, deleteTrip }: TripTabP
     return "₹" + n.toLocaleString("en-IN");
   }
 
+  // ── Tab bar (always rendered) ────────────────────────────
+  const tabBar = (
+    <div className="flex items-center border-b border-gray-800 overflow-x-auto scrollbar-none">
+      {/* Trips list tab */}
+      <button
+        onClick={() => { setActiveTab("list"); setShowForm(false); }}
+        className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors shrink-0 ${
+          activeTab === "list" && !showForm
+            ? "border-blue-500 text-white"
+            : "border-transparent text-gray-500 hover:text-gray-300"
+        }`}
+      >
+        All Trips
+      </button>
+
+      {/* Open trip tabs */}
+      {openTabs.map((tabId) => {
+        const trip = trips.find((t) => t.id === tabId);
+        if (!trip) return null;
+        const isActive = activeTab === tabId && !showForm;
+        return (
+          <div
+            key={tabId}
+            onClick={() => { setActiveTab(tabId); setShowForm(false); }}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
+              isActive
+                ? "border-blue-500 text-white"
+                : "border-transparent text-gray-500 hover:text-gray-300"
+            }`}
+          >
+            <span>Trip #{getTripNumber(tabId)}</span>
+            <button
+              onClick={(e) => closeTab(tabId, e)}
+              className={`rounded hover:bg-gray-700 p-0.5 transition-colors ${
+                isActive ? "text-gray-400 hover:text-white" : "text-gray-600 hover:text-gray-400"
+              }`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        );
+      })}
+
+      {/* Add new trip */}
+      <button
+        onClick={openNew}
+        className="flex items-center justify-center px-3 py-2.5 text-gray-500 hover:text-gray-300 border-b-2 border-transparent transition-colors shrink-0"
+        title="Add Trip"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+    </div>
+  );
+
+  // ── Form view ───────────────────────────────────────────
   if (showForm) {
     return (
-      <div className="space-y-6">
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-5 sm:p-6 space-y-5">
-          <h3 className="text-sm font-semibold text-white">
-            {editingTrip ? "Edit Trip" : "New Trip"}
-          </h3>
+      <div className="space-y-0">
+        {tabBar}
+        <div className="pt-5 space-y-6">
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-5 sm:p-6 space-y-5">
+            <h3 className="text-sm font-semibold text-white">
+              {editingTrip ? "Edit Trip" : "New Trip"}
+            </h3>
 
-          {/* Date */}
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Trip Date</label>
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className="w-full sm:w-64 h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 transition-colors"
-            />
-          </div>
+            {/* Date */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Trip Date</label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className="w-full sm:w-64 h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
 
-          {/* Route */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Route Information
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  From <span className="text-rose-400">*</span>
-                </label>
-                <CitySearch
-                  value={form.from}
-                  onChange={(city) => {
-                    setForm({ ...form, from: city });
-                    setTripErrors((prev) => ({ ...prev, from: undefined }));
-                  }}
-                  placeholder="Search origin city…"
-                  hasError={!!tripErrors.from}
-                />
-                {tripErrors.from && (
-                  <p className="mt-1 text-xs text-rose-400">{tripErrors.from}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  To <span className="text-rose-400">*</span>
-                </label>
-                <CitySearch
-                  value={form.to}
-                  onChange={(city) => {
-                    setForm({ ...form, to: city });
-                    setTripErrors((prev) => ({ ...prev, to: undefined }));
-                  }}
-                  placeholder="Search destination city…"
-                  hasError={!!tripErrors.to}
-                />
-                {tripErrors.to && (
-                  <p className="mt-1 text-xs text-rose-400">{tripErrors.to}</p>
-                )}
+            {/* Route */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Route Information
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    From <span className="text-rose-400">*</span>
+                  </label>
+                  <CitySearch
+                    value={form.from}
+                    onChange={(city) => {
+                      setForm({ ...form, from: city });
+                      setTripErrors((prev) => ({ ...prev, from: undefined }));
+                    }}
+                    placeholder="Search origin city…"
+                    hasError={!!tripErrors.from}
+                  />
+                  {tripErrors.from && (
+                    <p className="mt-1 text-xs text-rose-400">{tripErrors.from}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    To <span className="text-rose-400">*</span>
+                  </label>
+                  <CitySearch
+                    value={form.to}
+                    onChange={(city) => {
+                      setForm({ ...form, to: city });
+                      setTripErrors((prev) => ({ ...prev, to: undefined }));
+                    }}
+                    placeholder="Search destination city…"
+                    hasError={!!tripErrors.to}
+                  />
+                  {tripErrors.to && (
+                    <p className="mt-1 text-xs text-rose-400">{tripErrors.to}</p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Cargo & Logistics */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Cargo & Logistics
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Load Weight (KG)
-                </label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.loadWeight || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, loadWeight: Number(e.target.value) })
-                  }
-                  className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Total Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.totalAmount || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, totalAmount: Number(e.target.value) })
-                  }
-                  className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
-                />
+            {/* Cargo & Logistics */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Cargo & Logistics
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Load Weight (KG)</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.loadWeight || ""}
+                    onChange={(e) => setForm({ ...form, loadWeight: Number(e.target.value) })}
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Total Amount (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.totalAmount || ""}
+                    onChange={(e) => setForm({ ...form, totalAmount: Number(e.target.value) })}
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Financial Details Table */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Financial Details
-            </h4>
-            <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-700 text-gray-400">
-                    <th className="px-4 py-2.5 text-left font-medium">Details</th>
-                    <th className="px-4 py-2.5 text-right font-medium">
-                      Money Spent
-                    </th>
-                    <th className="px-4 py-2.5 text-right font-medium">
-                      Money Received
-                    </th>
-                    <th className="px-4 py-2.5 w-10"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {form.lines.map((line, i) => (
-                    <tr key={i} className="border-b border-gray-700 last:border-0">
-                      <td className="px-4 py-2">
-                        <input
-                          placeholder="e.g. Fuel, Advance Payment"
-                          value={line.detail}
-                          onChange={(e) => updateLine(i, "detail", e.target.value)}
-                          className="w-full h-8 px-2 rounded bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="number"
-                          placeholder="0"
-                          value={line.spent || ""}
-                          onChange={(e) =>
-                            updateLine(i, "spent", Number(e.target.value))
-                          }
-                          className="w-full h-8 px-2 rounded bg-gray-800 border border-gray-700 text-sm text-gray-200 text-right placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="number"
-                          placeholder="0"
-                          value={line.received || ""}
-                          onChange={(e) =>
-                            updateLine(i, "received", Number(e.target.value))
-                          }
-                          className="w-full h-8 px-2 rounded bg-gray-800 border border-gray-700 text-sm text-gray-200 text-right placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {form.lines.length > 1 && (
-                          <button
-                            onClick={() => removeLine(i)}
-                            className="text-gray-500 hover:text-rose-400 transition-colors"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </td>
+            {/* Financial Details */}
+            <div>
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Financial Details
+              </h4>
+              <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-700 text-gray-400">
+                      <th className="px-4 py-2.5 text-left font-medium">Details</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Money Spent</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Money Received</th>
+                      <th className="px-4 py-2.5 w-10"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <button
-                onClick={addLine}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors w-full border-t border-gray-700"
-              >
-                <Plus className="h-3 w-3" />
-                Add More Lines
-              </button>
-            </div>
-
-            {/* Totals */}
-            <div className="flex justify-end gap-6 mt-3 text-sm">
-              <span className="text-gray-400">
-                Total Spent:{" "}
-                <span className="text-rose-400 font-medium">
-                  {formatCurrency(totalSpent)}
+                  </thead>
+                  <tbody>
+                    {form.lines.map((line, i) => (
+                      <tr key={i} className="border-b border-gray-700 last:border-0">
+                        <td className="px-4 py-2">
+                          <input
+                            placeholder="e.g. Fuel, Advance Payment"
+                            value={line.detail}
+                            onChange={(e) => updateLine(i, "detail", e.target.value)}
+                            className="w-full h-8 px-2 rounded bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={line.spent || ""}
+                            onChange={(e) => updateLine(i, "spent", Number(e.target.value))}
+                            className="w-full h-8 px-2 rounded bg-gray-800 border border-gray-700 text-sm text-gray-200 text-right placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={line.received || ""}
+                            onChange={(e) => updateLine(i, "received", Number(e.target.value))}
+                            className="w-full h-8 px-2 rounded bg-gray-800 border border-gray-700 text-sm text-gray-200 text-right placeholder-gray-500 outline-none focus:border-blue-500 transition-colors"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          {form.lines.length > 1 && (
+                            <button
+                              onClick={() => removeLine(i)}
+                              className="text-gray-500 hover:text-rose-400 transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button
+                  onClick={addLine}
+                  className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors w-full border-t border-gray-700"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add More Lines
+                </button>
+              </div>
+              <div className="flex justify-end gap-6 mt-3 text-sm">
+                <span className="text-gray-400">
+                  Total Spent:{" "}
+                  <span className="text-rose-400 font-medium">{formatCurrency(totalSpent)}</span>
                 </span>
-              </span>
-              <span className="text-gray-400">
-                Total Received:{" "}
-                <span className="text-emerald-400 font-medium">
-                  {formatCurrency(totalReceived)}
+                <span className="text-gray-400">
+                  Total Received:{" "}
+                  <span className="text-emerald-400 font-medium">{formatCurrency(totalReceived)}</span>
                 </span>
-              </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-3 justify-end">
-          <button
-            onClick={() => {
-              setShowForm(false);
-              setEditingTrip(null);
-              setTripErrors({});
-            }}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors"
-          >
-            Discard
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={tripSaving}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium text-white transition-colors"
-          >
-            {tripSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            {tripSaving ? "Saving…" : "Save Trip Details"}
-          </button>
+          <div className="flex items-center gap-3 justify-end">
+            <button
+              onClick={() => { setShowForm(false); setEditingTrip(null); setTripErrors({}); }}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+            >
+              Discard
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={tripSaving}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-sm font-medium text-white transition-colors"
+            >
+              {tripSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {tripSaving ? "Saving…" : "Save Trip Details"}
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // ── Trip List View ──────────────────────────────────────
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">
-          Trips ({trips.length})
-        </h3>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium text-white transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Add Trip
-        </button>
-      </div>
+  // ── Trip Detail tab content ─────────────────────────────
+  const viewTrip = trips.find((t) => t.id === activeTab);
+  if (activeTab !== "list" && viewTrip) {
+    const vSpent = viewTrip.lines.reduce((s, l) => s + l.spent, 0);
+    const vReceived = viewTrip.lines.reduce((s, l) => s + l.received, 0);
+    const vNet = vReceived - vSpent;
+    return (
+      <div className="space-y-0">
+        {tabBar}
+        <div className="pt-5 space-y-4">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-semibold text-white">
+                {viewTrip.from} → {viewTrip.to}
+              </h3>
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  viewTrip.status === "Completed"
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : "bg-amber-500/15 text-amber-400"
+                }`}
+              >
+                {viewTrip.status}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => openEdit(viewTrip.id)}
+                className="px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 text-xs font-medium transition-colors"
+              >
+                Edit
+              </button>
+              {viewTrip.status !== "Completed" && (
+                <button
+                  onClick={() => handleComplete(viewTrip.id)}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white transition-colors"
+                >
+                  Complete
+                </button>
+              )}
+              <button
+                onClick={() => deleteTrip(viewTrip.id)}
+                className="px-3 py-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
 
-      {trips.length === 0 ? (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-8 text-center">
-          <MapPin className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">
-            No trips recorded for this vehicle yet.
-          </p>
+          {/* Info grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Date",
+                value: new Date(viewTrip.date).toLocaleDateString("en-IN", {
+                  day: "2-digit", month: "short", year: "numeric",
+                }),
+              },
+              { label: "Load Weight", value: `${viewTrip.loadWeight.toLocaleString("en-IN")} kg` },
+              { label: "Total Amount", value: formatCurrency(viewTrip.totalAmount) },
+              { label: "Status", value: viewTrip.status },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-gray-900 rounded-xl border border-gray-800 p-3">
+                <p className="text-xs text-gray-500 mb-1">{label}</p>
+                <p className="text-sm font-medium text-white truncate">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Route */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <p className="text-xs text-gray-500 mb-3 font-semibold uppercase tracking-wider">Route</p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-blue-400 shrink-0" />
+                <span className="text-sm font-medium text-white">{viewTrip.from}</span>
+              </div>
+              <div className="flex-1 border-t border-dashed border-gray-700" />
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span className="text-sm font-medium text-white">{viewTrip.to}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Lines table */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <p className="text-xs text-gray-500 mb-3 font-semibold uppercase tracking-wider">
+              Expense &amp; Income Lines
+            </p>
+            {viewTrip.lines.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-3">No lines recorded.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      <th className="text-left text-xs font-medium text-gray-500 pb-2 pr-4">Detail</th>
+                      <th className="text-right text-xs font-medium text-gray-500 pb-2 pr-4">Spent</th>
+                      <th className="text-right text-xs font-medium text-gray-500 pb-2">Received</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {viewTrip.lines.map((line, i) => (
+                      <tr key={i}>
+                        <td className="py-2 pr-4 text-gray-300">{line.detail || "—"}</td>
+                        <td className="py-2 pr-4 text-right text-rose-400">
+                          {line.spent > 0 ? formatCurrency(line.spent) : "—"}
+                        </td>
+                        <td className="py-2 text-right text-emerald-400">
+                          {line.received > 0 ? formatCurrency(line.received) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Financial summary */}
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+            <p className="text-xs text-gray-500 mb-3 font-semibold uppercase tracking-wider">
+              Financial Summary
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Total Spent</p>
+                <p className="text-base font-bold text-rose-400">{formatCurrency(vSpent)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Total Received</p>
+                <p className="text-base font-bold text-emerald-400">{formatCurrency(vReceived)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Net Profit / Loss</p>
+                <p className={`text-base font-bold ${vNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  {vNet >= 0 ? "+" : ""}{formatCurrency(vNet)}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {trips.map((t) => {
+      </div>
+    );
+  }
+
+  // ── Trip List tab content ───────────────────────────────
+  return (
+    <div className="space-y-0">
+      {tabBar}
+      <div className="pt-5 space-y-3">
+        {trips.length === 0 ? (
+          <div className="bg-gray-900 rounded-xl border border-gray-800 p-8 text-center">
+            <MapPin className="h-10 w-10 text-gray-600 mx-auto mb-3" />
+            <p className="text-sm text-gray-500">No trips recorded for this vehicle yet.</p>
+          </div>
+        ) : (
+          trips.map((t) => {
             const spent = t.lines.reduce((s, l) => s + l.spent, 0);
             const received = t.lines.reduce((s, l) => s + l.received, 0);
             return (
@@ -1230,13 +1418,15 @@ function TripTab({ vehicleId, trips, addTrip, updateTrip, deleteTrip }: TripTabP
                     </p>
                   </div>
                   <div className="flex items-center gap-4 text-xs">
-                    <span className="text-rose-400">
-                      Spent: {formatCurrency(spent)}
-                    </span>
-                    <span className="text-emerald-400">
-                      Received: {formatCurrency(received)}
-                    </span>
+                    <span className="text-rose-400">Spent: {formatCurrency(spent)}</span>
+                    <span className="text-emerald-400">Received: {formatCurrency(received)}</span>
                     <div className="flex gap-2">
+                      <button
+                        onClick={() => openView(t.id)}
+                        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-medium text-white transition-colors"
+                      >
+                        View
+                      </button>
                       <button
                         onClick={() => openEdit(t.id)}
                         className="px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 text-xs font-medium transition-colors"
@@ -1262,9 +1452,9 @@ function TripTab({ vehicleId, trips, addTrip, updateTrip, deleteTrip }: TripTabP
                 </div>
               </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 }
