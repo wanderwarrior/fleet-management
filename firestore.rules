@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User app data — owner only
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // User approval profiles
+    match /userProfiles/{uid} {
+      // Registered user creates their own profile
+      allow create: if request.auth != null && request.auth.uid == uid;
+      // Public read — login page and admin panel both need this
+      allow read: if true;
+      // Admin panel writes status updates (no Firebase Auth for admin)
+      allow update: if true;
+    }
+  }
+}

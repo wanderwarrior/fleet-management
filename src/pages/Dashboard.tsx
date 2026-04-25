@@ -8,16 +8,18 @@ import {
   X,
   Eye,
   EyeOff,
+  Pencil,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { vehicles, bankAccounts, addVehicle, addBankAccount, deleteBankAccount } =
+  const { vehicles, bankAccounts, addVehicle, addBankAccount, updateBankAccount, deleteBankAccount } =
     useAppContext();
 
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
+  const [editBankId, setEditBankId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // ── Vehicle form state ──────────────────────────────────
@@ -113,10 +115,31 @@ export default function Dashboard() {
     return Object.keys(errs).length === 0;
   }
 
+  function openEditBank(id: string) {
+    const b = bankAccounts.find((a) => a.id === id);
+    if (!b) return;
+    setBForm({
+      holderName: b.holderName,
+      bankName: b.bankName,
+      accountNo: b.accountNo,
+      accountType: b.accountType,
+      ifsc: b.ifsc,
+    });
+    setRetypeAccountNo(b.accountNo);
+    setBErrors({});
+    setEditBankId(id);
+    setShowBankModal(true);
+  }
+
   async function handleAddBank(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validateBForm()) return;
-    await addBankAccount({ ...bForm, ifsc: bForm.ifsc.toUpperCase() });
+    if (editBankId) {
+      await updateBankAccount({ id: editBankId, ...bForm, ifsc: bForm.ifsc.toUpperCase() });
+      setEditBankId(null);
+    } else {
+      await addBankAccount({ ...bForm, ifsc: bForm.ifsc.toUpperCase() });
+    }
     setBForm(emptyBForm);
     setRetypeAccountNo("");
     setBErrors({});
@@ -226,12 +249,20 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setDeleteConfirm(b.id)}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-rose-400 hover:bg-gray-800 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEditBank(b.id)}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-blue-400 hover:bg-gray-800 transition-colors"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(b.id)}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-rose-400 hover:bg-gray-800 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -368,7 +399,7 @@ export default function Dashboard() {
             onSubmit={handleAddBank}
             className="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-md mx-4 p-6 space-y-4 max-h-[90vh] overflow-y-auto"
           >
-            <h2 className="text-lg font-semibold text-white">Add Bank Account</h2>
+            <h2 className="text-lg font-semibold text-white">{editBankId ? "Edit Bank Account" : "Add Bank Account"}</h2>
 
             <div className="space-y-3">
 
@@ -487,6 +518,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={() => {
                   setShowBankModal(false);
+                  setEditBankId(null);
                   setBForm(emptyBForm);
                   setRetypeAccountNo("");
                   setBErrors({});

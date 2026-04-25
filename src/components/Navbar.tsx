@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, LogOut, Menu } from "lucide-react";
+import { Search, LogOut, Menu } from "lucide-react";
 import { logout } from "../hooks/useAuth";
 
 interface NavbarProps {
@@ -40,12 +40,7 @@ export default function Navbar({ title, onMenuClick }: NavbarProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <button className="relative p-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-500" />
-          </button>
-
-          <div className="hidden sm:flex h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 items-center justify-center text-xs font-semibold text-white cursor-pointer ring-2 ring-gray-800">
+<div className="hidden sm:flex h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 items-center justify-center text-xs font-semibold text-white cursor-pointer ring-2 ring-gray-800">
             YS
           </div>
 

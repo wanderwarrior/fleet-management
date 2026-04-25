@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { Eye, EyeOff } from "lucide-react";
+import { getUserProfile } from "../services/userApproval";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -24,7 +25,20 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      const profile = await getUserProfile(credential.user.uid);
+
+      if (profile && profile.status === "pending") {
+        await auth.signOut();
+        setError("Your account is pending admin approval. You'll be notified by email once reviewed.");
+        return;
+      }
+      if (profile && profile.status === "rejected") {
+        await auth.signOut();
+        setError("Your account registration has been rejected. Please contact support.");
+        return;
+      }
+
       navigate("/");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Login failed";
