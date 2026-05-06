@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   FileBarChart,
+  User,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -14,6 +15,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { label: "Dashboard", path: "/", icon: LayoutDashboard },
+  { label: "Drivers", path: "/drivers", icon: User },
   { label: "Reports", path: "/reports", icon: FileBarChart },
 ];
 

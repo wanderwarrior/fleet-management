@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
+import Drivers from "./pages/Drivers";
 import VehicleDetail from "./pages/VehicleDetail";
+import DriverDetail from "./pages/DriverDetail";
 import TripDetail from "./pages/TripDetail";
 import Reports from "./pages/Reports";
 import Login from "./pages/Login";
@@ -44,6 +46,26 @@ function App() {
             <ProtectedRoute>
               <MainLayout title="Vehicle Details">
                 <VehicleDetail />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/drivers"
+          element={
+            <ProtectedRoute>
+              <MainLayout title="Drivers">
+                <Drivers />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/drivers/:id"
+          element={
+            <ProtectedRoute>
+              <MainLayout title="Driver Details">
+                <DriverDetail />
               </MainLayout>
             </ProtectedRoute>
           }

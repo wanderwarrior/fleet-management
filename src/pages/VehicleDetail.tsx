@@ -30,7 +30,6 @@ export default function VehicleDetail() {
     drivers,
     trips,
     updateVehicle,
-    deleteVehicle,
     addDriver,
     updateDriver,
     deleteDriver,
@@ -76,7 +75,10 @@ export default function VehicleDetail() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-xl font-semibold text-white">
-                {vehicle.name || vehicle.truckNumber}
+                {vehicle.name}
+              </h1>
+              <h1 className="text-xl font-semibold text-white">
+                {vehicle.truckNumber}
               </h1>
               <span className="flex items-center gap-1.5 text-xs font-medium">
                 <Circle
@@ -134,7 +136,7 @@ export default function VehicleDetail() {
             </div>
           </div>
 
-          <button
+          {/* <button
             onClick={async () => {
               await deleteVehicle(vehicle.id);
               navigate("/");
@@ -143,7 +145,7 @@ export default function VehicleDetail() {
           >
             <Trash2 className="h-4 w-4" />
             Delete Vehicle
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -289,6 +291,7 @@ function DriverTab({
   deleteDriver,
   updateVehicle,
 }: DriverTabProps) {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: driver?.name ?? "",
     phone: driver?.phone ?? "",
@@ -440,13 +443,21 @@ function DriverTab({
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-semibold text-white">Driver Profile</h3>
           {driver && !isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 text-xs font-medium transition-colors"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate(`/drivers/${driver.id}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-600/50 text-blue-400 hover:bg-blue-500/10 text-xs font-medium transition-colors"
+              >
+                View Full Profile
+              </button>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 text-xs font-medium transition-colors"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Edit
+              </button>
+            </div>
           )}
         </div>
 

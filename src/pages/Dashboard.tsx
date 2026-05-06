@@ -14,7 +14,7 @@ import { useAppContext } from "../context/AppContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { vehicles, bankAccounts, addVehicle, addBankAccount, updateBankAccount, deleteBankAccount } =
+  const { vehicles, drivers, bankAccounts, addVehicle, addBankAccount, updateBankAccount, deleteBankAccount } =
     useAppContext();
 
   const [showVehicleModal, setShowVehicleModal] = useState(false);
@@ -30,6 +30,7 @@ export default function Dashboard() {
     model: "",
     plateNumber: "",
     odometer: 0,
+    loadCapacity:0
   };
   const [vForm, setVForm] = useState(emptyVForm);
   const [vErrors, setVErrors] = useState<Record<string, string>>({});
@@ -182,7 +183,10 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-3">
+             
+              
               {vehicles.map((v) => (
+              
                 <button
                   key={v.id}
                   onClick={() => navigate(`/vehicles/${v.id}`)}
@@ -194,10 +198,12 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-white">
-                        {v.name || v.truckNumber}
-                      </p>
-                      <p className="text-xs text-gray-500 font-mono">
                         {v.truckNumber}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {v.driverId
+                          ? (drivers.find((d) => d.id === v.driverId)?.name ?? "Unknown Driver")
+                          : "No Driver Assigned"}
                       </p>
                     </div>
                   </div>
@@ -313,18 +319,6 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">
-                    Vehicle Type <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    placeholder="e.g. Heavy"
-                    value={vForm.type}
-                    onChange={(e) => setVForm({ ...vForm, type: e.target.value })}
-                    className={`w-full h-10 px-3 rounded-lg bg-gray-800 border text-sm text-gray-200 placeholder-gray-500 outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${vErrors.type ? "border-rose-500 focus:border-rose-500" : "border-gray-700 focus:border-blue-500"}`}
-                  />
-                  {vErrors.type && <p className="text-xs text-rose-400 mt-1">{vErrors.type}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">
                     Model <span className="text-rose-400">*</span>
                   </label>
                   <input
@@ -334,22 +328,7 @@ export default function Dashboard() {
                     className={`w-full h-10 px-3 rounded-lg bg-gray-800 border text-sm text-gray-200 placeholder-gray-500 outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${vErrors.model ? "border-rose-500 focus:border-rose-500" : "border-gray-700 focus:border-blue-500"}`}
                   />
                   {vErrors.model && <p className="text-xs text-rose-400 mt-1">{vErrors.model}</p>}
-                </div>
-              </div>
-
-              {/* Plate Number & Odometer */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">
-                    Plate Number <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    placeholder="e.g. MH12AB1234"
-                    value={vForm.plateNumber}
-                    onChange={(e) => setVForm({ ...vForm, plateNumber: e.target.value.toUpperCase() })}
-                    className={`w-full h-10 px-3 rounded-lg bg-gray-800 border text-sm text-gray-200 placeholder-gray-500 outline-none focus:ring-1 focus:ring-blue-500 transition-colors font-mono ${vErrors.plateNumber ? "border-rose-500 focus:border-rose-500" : "border-gray-700 focus:border-blue-500"}`}
-                  />
-                  {vErrors.plateNumber && <p className="text-xs text-rose-400 mt-1">{vErrors.plateNumber}</p>}
+                  
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">
@@ -364,6 +343,36 @@ export default function Dashboard() {
                     className={`w-full h-10 px-3 rounded-lg bg-gray-800 border text-sm text-gray-200 placeholder-gray-500 outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${vErrors.odometer ? "border-rose-500 focus:border-rose-500" : "border-gray-700 focus:border-blue-500"}`}
                   />
                   {vErrors.odometer && <p className="text-xs text-rose-400 mt-1">{vErrors.odometer}</p>}
+                </div>
+              </div>
+
+              {/* Vehicle Type */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">
+                    Vehicle Type <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    placeholder="e.g. Heavy"
+                    value={vForm.type}
+                    onChange={(e) => setVForm({ ...vForm, type: e.target.value })}
+                    className={`w-full h-10 px-3 rounded-lg bg-gray-800 border text-sm text-gray-200 placeholder-gray-500 outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${vErrors.type ? "border-rose-500 focus:border-rose-500" : "border-gray-700 focus:border-blue-500"}`}
+                  />
+                  {vErrors.type && <p className="text-xs text-rose-400 mt-1">{vErrors.type}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">
+                    Load capacity (tons)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={vForm.loadCapacity || ""}
+                    onChange={(e) => setVForm({ ...vForm, loadCapacity: Number(e.target.value) })}
+                    className={`w-full h-10 px-3 rounded-lg bg-gray-800 border text-sm text-gray-200 placeholder-gray-500 outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${vErrors.loadCapacity ? "border-rose-500 focus:border-rose-500" : "border-gray-700 focus:border-blue-500"}`}
+                  />
+                  {vErrors.loadCapacity && <p className="text-xs text-rose-400 mt-1">{vErrors.loadCapacity}</p>}
                 </div>
               </div>
 

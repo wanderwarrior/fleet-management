@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, X, Phone, CreditCard, Pencil, Trash2, BadgeCheck, FileText } from "lucide-react";
 import { useAppContext, type Driver } from "../context/AppContext";
 
@@ -70,6 +71,7 @@ const statusColor: Record<string, string> = {
 
 export default function Drivers() {
   const { drivers, addDriver, updateDriver, deleteDriver } = useAppContext();
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<Driver | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -161,19 +163,20 @@ export default function Drivers() {
         {drivers.map((d) => (
           <div
             key={d.id}
-            className="bg-gray-900 rounded-xl p-5 border border-gray-800 hover:border-gray-700 transition-colors space-y-3"
+            onClick={() => navigate(`/drivers/${d.id}`)}
+            className="bg-gray-900 rounded-xl p-5 border border-gray-800 hover:border-gray-700 transition-colors space-y-3 cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-white">{d.name}</p>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => openEdit(d)}
+                  onClick={(e) => { e.stopPropagation(); openEdit(d); }}
                   className="p-1.5 rounded-lg text-gray-500 hover:bg-blue-500/10 hover:text-blue-400 transition-colors"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => setDeleteTarget(d.id)}
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(d.id); }}
                   className="p-1.5 rounded-lg text-gray-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />

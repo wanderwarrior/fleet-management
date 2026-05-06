@@ -36,6 +36,15 @@ export interface Driver {
   photoUrl?: string;
 }
 
+export interface AssistantDriver {
+  id: string;
+  name: string;
+  phone: string;
+  licenseNumber: string;
+  idProof: string;
+  photoUrl?: string;
+}
+
 export interface TripLine {
   detail: string;
   spent: number;
