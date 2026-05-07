@@ -9,16 +9,18 @@ import {
   Eye,
   EyeOff,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { vehicles, drivers, bankAccounts, addVehicle, addBankAccount, updateBankAccount, deleteBankAccount } =
+  const { vehicles, drivers, bankAccounts, addVehicle, deleteVehicle, addBankAccount, updateBankAccount, deleteBankAccount } =
     useAppContext();
 
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
+  const [deleteVehicleTarget, setDeleteVehicleTarget] = useState<string | null>(null);
   const [editBankId, setEditBankId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
@@ -28,7 +30,6 @@ export default function Dashboard() {
     truckNumber: "",
     type: "",
     model: "",
-    plateNumber: "",
     odometer: 0,
     loadCapacity:0
   };
@@ -53,8 +54,8 @@ export default function Dashboard() {
     if (!vForm.model.trim())
       errs.model = "Model is required.";
 
-    if (!vForm.plateNumber.trim())
-      errs.plateNumber = "Plate number is required.";
+    if (vForm.loadCapacity < 0)
+      errs.loadCapacity = "Load capacity cannot be negative.";
 
     if (vForm.odometer < 0)
       errs.odometer = "Odometer cannot be negative.";
@@ -70,7 +71,6 @@ export default function Dashboard() {
       ...vForm,
       name: vForm.name.trim(),
       truckNumber: vForm.truckNumber.trim().toUpperCase(),
-      plateNumber: vForm.plateNumber.trim().toUpperCase(),
       status: "Active",
       routeStatus: "Available",
       driverId: "",
@@ -187,12 +187,14 @@ export default function Dashboard() {
               
               {vehicles.map((v) => (
               
-                <button
+                <div
                   key={v.id}
-                  onClick={() => navigate(`/vehicles/${v.id}`)}
                   className="w-full flex items-center justify-between bg-gray-900 rounded-xl p-4 border border-gray-800 hover:border-gray-700 transition-colors text-left group"
                 >
-                  <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => navigate(`/vehicles/${v.id}`)}
+                    className="flex-1 flex items-center gap-4"
+                  >
                     <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
                       <Truck className="h-5 w-5 text-blue-400" />
                     </div>
@@ -206,9 +208,17 @@ export default function Dashboard() {
                           : "No Driver Assigned"}
                       </p>
                     </div>
+                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-gray-400 transition-colors" />
+                    <button
+                      onClick={() => setDeleteVehicleTarget(v.id)}
+                      className="p-1.5 rounded-lg text-gray-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-gray-400 transition-colors" />
-                </button>
+                </div>
               ))}
             </div>
           )}
@@ -544,6 +554,39 @@ export default function Dashboard() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ── Delete Vehicle Confirmation Modal ──────────────── */}
+      {deleteVehicleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl w-full max-w-sm mx-4 p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-white">
+              Delete Truck
+            </h2>
+            <p className="text-sm text-gray-400">
+              Are you sure you want to delete this truck? This action cannot be undone.
+            </p>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={() => setDeleteVehicleTarget(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (deleteVehicleTarget) {
+                    await deleteVehicle(deleteVehicleTarget);
+                    setDeleteVehicleTarget(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-sm font-medium text-white transition-colors"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

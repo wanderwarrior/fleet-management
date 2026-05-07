@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, ArrowRight, Pencil, Trash2 } from "lucide-react";
+import { Plus, X, ArrowRight, Trash2, Eye } from "lucide-react";
 import { useAppContext, type Trip, type TripLine } from "../context/AppContext";
 
 function formatCurrency(n: number) {
@@ -74,6 +74,8 @@ export default function Trips() {
     setShowModal(false);
   }
 
+  const isCompletedView = editTarget !== null && form.status === "Completed";
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -122,15 +124,17 @@ export default function Trips() {
                     </span>
                     <button
                       onClick={() => openEdit(t)}
-                      className="p-1.5 rounded-lg text-gray-500 hover:bg-blue-500/10 hover:text-blue-400 transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <Eye className="h-4 w-4 inline mr-1" />
+                      View
                     </button>
                     <button
                       onClick={() => setDeleteTarget(t.id)}
-                      className="p-1.5 rounded-lg text-gray-500 hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium bg-rose-600 hover:bg-rose-500 text-white transition-colors"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4 inline mr-1" />
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -234,7 +238,7 @@ export default function Trips() {
           >
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">
-                {editTarget ? "Edit Trip" : "Add New Trip"}
+                {editTarget ? "View Trip Details" : "Add New Trip"}
               </h2>
               <button
                 type="button"
@@ -256,10 +260,11 @@ export default function Trips() {
                 </label>
                 <select
                   value={form.vehicleId}
+                  disabled={isCompletedView}
                   onChange={(e) =>
                     setForm({ ...form, vehicleId: e.target.value })
                   }
-                  className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="" disabled>
                     Select a vehicle
@@ -281,9 +286,10 @@ export default function Trips() {
                   <input
                     type="text"
                     value={form.from}
+                    disabled={isCompletedView}
                     onChange={(e) => setForm({ ...form, from: e.target.value })}
                     placeholder="e.g. Mumbai"
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -293,9 +299,10 @@ export default function Trips() {
                   <input
                     type="text"
                     value={form.to}
+                    disabled={isCompletedView}
                     onChange={(e) => setForm({ ...form, to: e.target.value })}
                     placeholder="e.g. Pune"
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -309,8 +316,9 @@ export default function Trips() {
                   <input
                     type="date"
                     value={form.date}
+                    disabled={isCompletedView}
                     onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -319,13 +327,14 @@ export default function Trips() {
                   </label>
                   <select
                     value={form.status}
+                    disabled={isCompletedView}
                     onChange={(e) =>
                       setForm({
                         ...form,
                         status: e.target.value as typeof form.status,
                       })
                     }
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
@@ -342,11 +351,12 @@ export default function Trips() {
                   <input
                     type="number"
                     value={form.loadWeight || ""}
+                    disabled={isCompletedView}
                     onChange={(e) =>
                       setForm({ ...form, loadWeight: Number(e.target.value) })
                     }
                     placeholder="0"
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -356,22 +366,45 @@ export default function Trips() {
                   <input
                     type="number"
                     value={form.totalAmount || ""}
+                    disabled={isCompletedView}
                     onChange={(e) =>
                       setForm({ ...form, totalAmount: Number(e.target.value) })
                     }
                     placeholder="0"
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full h-10 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium text-white transition-colors"
-            >
-              {editTarget ? "Save Changes" : "Add Trip"}
-            </button>
+            {isCompletedView && (
+              <div className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-400">
+                This trip is completed and cannot be edited.
+              </div>
+            )}
+            <div className="flex items-center gap-3 justify-end pt-2">
+              {editTarget && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditTarget(null);
+                    setForm(emptyForm);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm font-medium text-gray-300 transition-colors"
+                >
+                  {isCompletedView ? "Close" : "Discard"}
+                </button>
+              )}
+              {!isCompletedView && (
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium text-white transition-colors"
+                >
+                  {editTarget ? "Save Changes" : "Add Trip"}
+                </button>
+              )}
+            </div>
           </form>
         </div>
       )}

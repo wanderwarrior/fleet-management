@@ -62,6 +62,14 @@ function validate(form: FormState): FormErrors {
   return errors;
 }
 
+function validatePhoneUniqueness(phone: string, drivers: Driver[], editTargetId?: string | null): string | undefined {
+  const normalizedPhone = phone.trim();
+  const phoneExists = drivers.some(
+    (d) => d.phone === normalizedPhone && d.id !== editTargetId
+  );
+  return phoneExists ? "This phone number is already registered." : undefined;
+}
+
 const statusColor: Record<string, string> = {
   Verified: "text-emerald-400 bg-emerald-400/10",
   Reviewing: "text-yellow-400 bg-yellow-400/10",
@@ -110,6 +118,12 @@ export default function Drivers() {
     const validationErrors = validate(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      return;
+    }
+
+    const phoneUniquenessError = validatePhoneUniqueness(form.phone, drivers, editTarget?.id);
+    if (phoneUniquenessError) {
+      setErrors((prev) => ({ ...prev, phone: phoneUniquenessError }));
       return;
     }
 

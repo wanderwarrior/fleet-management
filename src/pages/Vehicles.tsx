@@ -7,8 +7,8 @@ const emptyForm = {
   truckNumber: "",
   type: "",
   model: "",
-  plateNumber: "",
   odometer: 0,
+  loadCapacity: 0,
   status: "Active" as "Active" | "Idle",
   routeStatus: "Available" as "On Route" | "Available",
   driverId: "",
@@ -40,8 +40,8 @@ export default function Vehicles() {
       truckNumber: v.truckNumber,
       type: v.type,
       model: v.model,
-      plateNumber: v.plateNumber,
       odometer: v.odometer,
+      loadCapacity: v.loadCapacity ?? 0,
       status: v.status,
       routeStatus: v.routeStatus,
       driverId: v.driverId,
@@ -254,22 +254,8 @@ export default function Vehicles() {
                 </div>
               </div>
 
-              {/* Plate & Odometer */}
+              {/* Odometer & Load Capacity */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1.5">
-                    Plate Number
-                  </label>
-                  <input
-                    type="text"
-                    value={form.plateNumber}
-                    onChange={(e) =>
-                      setForm({ ...form, plateNumber: e.target.value.toUpperCase() })
-                    }
-                    placeholder="MH-04-XX-0000"
-                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                  />
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1.5">
                     Odometer (km)
@@ -279,6 +265,20 @@ export default function Vehicles() {
                     value={form.odometer || ""}
                     onChange={(e) =>
                       setForm({ ...form, odometer: Number(e.target.value) })
+                    }
+                    placeholder="0"
+                    className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1.5">
+                    Load Capacity (tons)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.loadCapacity || ""}
+                    onChange={(e) =>
+                      setForm({ ...form, loadCapacity: Number(e.target.value) })
                     }
                     placeholder="0"
                     className="w-full h-10 px-3 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"

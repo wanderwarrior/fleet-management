@@ -18,8 +18,8 @@ export interface Vehicle {
   truckNumber: string;
   type: string;
   model: string;
-  plateNumber: string;
   odometer: number;
+  loadCapacity: number;
   status: "Active" | "Idle";
   routeStatus: "On Route" | "Available";
   driverId: string;
